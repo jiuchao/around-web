@@ -1,0 +1,9 @@
+@import "TopBar.css";
+@import "Main.css";
+@import "Register.css";
+@import "~antd/dist/antd.css";
+
+.App {
+  text-align: center;
+}
+
