@@ -1,6 +1,12 @@
 import React, {Component} from 'react';
-import { Form, Input } from 'antd';
+import { Form, Input, Button } from 'antd';
+import { API_ROOT } from "../constants"
+import { Link } from "react-router-dom";
+
 class RegistrationForm extends Component {
+    state = {
+        confirmDirty: false,
+    }
     render() {
         const { getFieldDecorator } = this.props.form;
         const formItemLayout = {
@@ -26,7 +32,7 @@ class RegistrationForm extends Component {
             },
         };
         return (
-            <Form {...formItemLayout}>
+            <Form onSubmit={this.handleSubmit} {...formItemLayout} className="register">
                 <Form.Item label="Username">
                     {
                         getFieldDecorator("username", {
@@ -40,11 +46,90 @@ class RegistrationForm extends Component {
                     }
                 </Form.Item>
 
-                <Form.Item label="Password" hasFeedback></Form.Item>
-
-                <Form.Item label="Confirm Password"></Form.Item>
+                <Form.Item label="Password" hasFeedback>
+                    {
+                        getFieldDecorator("password", {
+                            rules: [
+                                {
+                                    required: true,
+                                    message: 'Please input your password',
+                                },
+                                {
+                                    validator: this.validateToNextPassword,
+                                }
+                             ]
+                        })(<Input.Password />)
+                    }
+                </Form.Item>
+                <Form.Item label="Confirm Password">
+                    {
+                        getFieldDecorator("confirm", {
+                            rules: [
+                                {
+                                    required: true,
+                                    message: 'Please input your password',
+                                },
+                                {
+                                    validator: this.compareToFirstPassword,
+                                }
+                            ]
+                        })(<Input.Password onBlur={this.handleConfirmBlur} />)
+                    }
+                </Form.Item>
+                <Form.Item {...tailFormItemLayout}>
+                    <Button type="primary" htmlType="submit">
+                        Register
+                    </Button>
+                    <p>I already have an account, go back to <Link to="/login">login</Link></p>
+                </Form.Item>
             </Form>
         );
+    }
+
+    compareToFirstPassword = (rule, value, callback) => {
+        const { form } = this.props;
+        if (value && value !== form.getFieldValue('password')) {
+            callback('Two passwords that you enter is inconsistent!');
+        } else {
+            callback();
+        }
+    };
+
+    validateToNextPassword = (rule, value, callback) => {
+        const { form } = this.props;
+        if (value && this.state.confirmDirty) {
+            form.validateFields(['confirm'], { force: true });
+        }
+        callback();
+    };
+
+    handleConfirmBlur = e => {
+        const { value } = e.target;
+        this.setState({ confirmDirty: this.state.confirmDirty || !!value });
+    };
+
+    handleSubmit = e =>{
+        e.preventDefault();
+        this.props.form.validateFieldsAndScroll((err, values) => {
+            if (!err) {
+                console.log('Received values of form: ', values);
+                fetch(`${API_ROOT}/signup`, {
+                    method: "POST",
+                    body: JSON.stringify({
+                        username: values.username,
+                        password: values.password
+                    })
+                }).then(response => {
+                    console.log('response ->', response);
+                    if(response.ok){
+                        return response.json();
+                    }
+                })
+                    .then(data => {
+                        console.log("Success ->", data);
+                    })
+            }
+        });
     }
 }
 

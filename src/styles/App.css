@@ -2,6 +2,7 @@
 @import "Main.css";
 @import "Register.css";
 @import "~antd/dist/antd.css";
+@import "Login.css";
 
 .App {
   text-align: center;
