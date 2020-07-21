@@ -1,9 +1,21 @@
 import React from 'react';
-import { Tabs, Spin, Row, Col } from 'antd';
-import { GEO_OPTIONS, POS_KEY, API_ROOT, AUTH_HEADER, TOKEN_KEY, POST_TYPE_IMAGE, POST_TYPE_UNKNOWN, POST_TYPE_VIDEO } from '../constants'
+import { Tabs, Spin, Row, Col, Radio } from 'antd';
+import {
+    GEO_OPTIONS,
+    POS_KEY,
+    API_ROOT,
+    AUTH_HEADER,
+    TOKEN_KEY,
+    POST_TYPE_IMAGE,
+    POST_TYPE_VIDEO,
+    POST_TYPE_UNKNOWN,
+    TOPIC_AROUND,
+    TOPIC_FACE
+} from '../constants';
 
 import CreatePostButton from "./CreatePostButton"
 import Gallery from './Gallery';
+import AroundMap from "./AroundMap"
 
 const { TabPane } = Tabs;
 
@@ -13,6 +25,7 @@ class Home extends React.Component {
         isLoadingPosts: false,
         error: '',
         posts: [],
+        topic: TOPIC_AROUND,
     }
 
     componentDidMount() {
@@ -41,12 +54,15 @@ class Home extends React.Component {
         this.setState({ isLoadingGeoLocation: false, error: 'Failed to load geo location.' });
     }
 
+    loadNearbyPosts = (center, radius) => {
+        const { lat, lon } = center?
+            center:
+            JSON.parse(localStorage.getItem(POS_KEY));
+        const range = radius? radius: 20000;
 
-    loadNearbyPosts = () => {
-        const { lat, lon } = JSON.parse(localStorage.getItem(POS_KEY));
         const token = localStorage.getItem(TOKEN_KEY);
         this.setState({ isLoadingPosts: true, error: '' });
-        return fetch(`${API_ROOT}/search?lat=${lat}&lon=${lon}&range=20000`, {
+        return fetch(`${API_ROOT}/search?lat=${lat}&lon=${lon}&range=${range}`, {
             method: 'GET',
             headers: {
                 Authorization: `${AUTH_HEADER} ${token}`
@@ -108,11 +124,17 @@ class Home extends React.Component {
                 {
                     posts
                         .filter(post => [POST_TYPE_VIDEO, POST_TYPE_UNKNOWN].includes(post.type))
-                        .map(post => (
-                            <Col>
-                                HAHA
-                            </Col>
-                        ))
+                        .map(post => {
+                            return (
+                                <Col key={post.url} span={6}>
+                                    <video src={post.url}
+                                           controls={true}
+                                           className="video-block"
+                                    />
+                                    <p>{post.user}: {post.message}</p>
+                                </Col>
+                            )
+                        })
                 }
             </Row>
         )
@@ -129,21 +151,42 @@ class Home extends React.Component {
             })
         return <Gallery images={images}/>
     }
+
+    handleTopicChange=(e)=>{
+        console.log(e.target.value);
+        this.setState({
+            topic: e.target.value,
+        })
+    }
     render() {
         const operations = <CreatePostButton loadNearbyPosts={this.loadNearbyPosts}/>;
 
         return (
-            <Tabs tabBarExtraContent={operations} className="main-tabs">
-                <TabPane tab="Image Posts" key="1">
-                    {this.renderPosts(POST_TYPE_IMAGE)}
-                </TabPane>
-                <TabPane tab="Video Posts" key="2">
-                    {this.renderPosts(POST_TYPE_VIDEO)}
-                </TabPane>
-                <TabPane tab="Map" key="3">
-                    Content of tab 3
-                </TabPane>
-            </Tabs>
+            <div>
+                <Radio.Group onChange={this.handleTopicChange} value={this.state.topic}>
+                    <Radio value={TOPIC_AROUND}>Posts Around Me</Radio>
+                    <Radio value={TOPIC_FACE}>Faces Around The World</Radio>
+                </Radio.Group>
+
+                <Tabs tabBarExtraContent={operations} className="main-tabs">
+                    <TabPane tab="Image Posts" key="1">
+                        {this.renderPosts(POST_TYPE_IMAGE)}
+                    </TabPane>
+                    <TabPane tab="Video Posts" key="2">
+                        {this.renderPosts(POST_TYPE_VIDEO)}
+                    </TabPane>
+                    <TabPane tab="Map" key="3">
+                        <AroundMap
+                            googleMapURL="https://maps.googleapis.com/maps/api/js?key=AIzaSyD3CEh9DXuyjozqptVB5LA-dN7MxWWkr9s&v=3.exp&libraries=geometry,drawing,places"
+                            loadingElement={<div style={{ height: `100%` }} />}
+                            containerElement={<div style={{ height: `600px` }} />}
+                            mapElement={<div style={{ height: `100%` }} />}
+                            loadNearbyPosts = {this.loadNearbyPosts}
+                            posts={this.state.posts}
+                        />
+                    </TabPane>
+                </Tabs>
+            </div>
         );
     }
 }
