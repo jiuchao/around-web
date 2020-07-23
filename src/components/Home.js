@@ -154,9 +154,55 @@ class Home extends React.Component {
 
     handleTopicChange=(e)=>{
         console.log(e.target.value);
+        const topic = e.target.value
         this.setState({
-            topic: e.target.value,
+            topic: topic,
         })
+        if(topic === TOPIC_AROUND){
+            this.loadNearbyPosts();
+        }else{
+            this.loadFacesAroundTheWorld();
+        }
+    }
+
+    loadFacesAroundTheWorld(){
+        const token = localStorage.getItem(TOKEN_KEY);
+        this.setState({
+            isLoadingPosts: true,
+            err: ''
+        })
+        return fetch(`${API_ROOT}/cluster?term=face`, {
+            method:"GET",
+            headers: {
+                Authorization: `${AUTH_HEADER} ${token}`
+            }
+        }).then(response =>{
+            if(response.ok){
+                console.log(response);
+                return response.json();
+            }
+            throw new Error("Failed to load around world");
+        }).then(data =>{
+            this.setState({
+                posts:data ? data:[],
+                isLoadingPosts: false
+            })
+        }).catch( err =>{
+            console.log(err);
+            this.setState({
+                err: err.message,
+                isLoadingPosts: false
+            });
+        })
+    }
+
+    loadPostsByTopic =(center, radius) =>{
+        const { topic } = this.state;
+        if(topic === TOPIC_AROUND){
+            return this.loadNearbyPosts(center, radius);
+        } else{
+            return this.loadFacesAroundTheWorld();
+        }
     }
     render() {
         const operations = <CreatePostButton loadNearbyPosts={this.loadNearbyPosts}/>;
@@ -181,7 +227,7 @@ class Home extends React.Component {
                             loadingElement={<div style={{ height: `100%` }} />}
                             containerElement={<div style={{ height: `600px` }} />}
                             mapElement={<div style={{ height: `100%` }} />}
-                            loadNearbyPosts = {this.loadNearbyPosts}
+                            loadPostsByTopic={this.loadPostsByTopic}
                             posts={this.state.posts}
                         />
                     </TabPane>

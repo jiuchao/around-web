@@ -19,7 +19,7 @@ class NormalAroundMap extends Component {
         //get radius
         const radius = this.getRadius();
         //load nearby post
-        this.props.loadNearbyPosts(centerobj, radius);
+        this.props.loadPostsByTopic(centerobj, radius);
 
     }
 
@@ -36,6 +36,7 @@ class NormalAroundMap extends Component {
     render() {
         const { lat, lon } = JSON.parse(localStorage.getItem(POS_KEY));
         console.log(lat, lon);
+
         return (
             <GoogleMap
                 ref={this.getMapRef}
